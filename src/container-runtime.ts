@@ -11,45 +11,32 @@ import { logger } from './logger.js';
 /** The container runtime binary name. */
 export const CONTAINER_RUNTIME_BIN = 'container';
 
-/** Hostname/IP containers use to reach the host machine. */
-export const CONTAINER_HOST_GATEWAY =
-  CONTAINER_RUNTIME_BIN === 'container'
-    ? detectAppleContainerGateway()
-    : 'host.docker.internal';
+/**
+ * IP address containers use to reach the host machine.
+ * Apple Container VMs use a bridge network (192.168.64.x); the host is at the gateway.
+ * Detected from the bridge0 interface, falling back to 192.168.64.1.
+ */
+export const CONTAINER_HOST_GATEWAY = detectHostGateway();
 
-function detectAppleContainerGateway(): string {
-  // Apple Container VMs use 192.168.64.1 as the default host gateway
+function detectHostGateway(): string {
+  // Apple Container on macOS: containers reach the host via the bridge network gateway
+  const ifaces = os.networkInterfaces();
+  const bridge = ifaces['bridge100'] || ifaces['bridge0'];
+  if (bridge) {
+    const ipv4 = bridge.find((a) => a.family === 'IPv4');
+    if (ipv4) return ipv4.address;
+  }
+  // Fallback: Apple Container's default gateway
   return '192.168.64.1';
 }
 
 /**
  * Address the credential proxy binds to.
- * Docker Desktop (macOS): 127.0.0.1 — the VM routes host.docker.internal to loopback.
- * Docker (Linux): bind to the docker0 bridge IP so only containers can reach it,
- *   falling back to 0.0.0.0 if the interface isn't found.
+ * Binds to the bridge interface IP so only Apple Container VMs can reach it.
+ * Never 0.0.0.0 — that would expose credentials to the local network.
  */
 export const PROXY_BIND_HOST =
-  process.env.CREDENTIAL_PROXY_HOST || detectProxyBindHost();
-
-function detectProxyBindHost(): string {
-  // Apple Container: proxy must be reachable from the VM network, not just loopback
-  if (os.platform() === 'darwin' && CONTAINER_RUNTIME_BIN === 'container')
-    return '0.0.0.0';
-  if (os.platform() === 'darwin') return '127.0.0.1';
-
-  // WSL uses Docker Desktop (same VM routing as macOS) — loopback is correct.
-  // Check /proc filesystem, not env vars — WSL_DISTRO_NAME isn't set under systemd.
-  if (fs.existsSync('/proc/sys/fs/binfmt_misc/WSLInterop')) return '127.0.0.1';
-
-  // Bare-metal Linux: bind to the docker0 bridge IP instead of 0.0.0.0
-  const ifaces = os.networkInterfaces();
-  const docker0 = ifaces['docker0'];
-  if (docker0) {
-    const ipv4 = docker0.find((a) => a.family === 'IPv4');
-    if (ipv4) return ipv4.address;
-  }
-  return '0.0.0.0';
-}
+  process.env.CREDENTIAL_PROXY_HOST || CONTAINER_HOST_GATEWAY;
 
 /** CLI args needed for the container to resolve the host gateway. */
 export function hostGatewayArgs(): string[] {
@@ -76,7 +63,7 @@ export function stopContainer(name: string): void {
   if (!/^[a-zA-Z0-9][a-zA-Z0-9_.-]*$/.test(name)) {
     throw new Error(`Invalid container name: ${name}`);
   }
-  execSync(`${CONTAINER_RUNTIME_BIN} stop -t 1 ${name}`, { stdio: 'pipe' });
+  execSync(`${CONTAINER_RUNTIME_BIN} stop ${name}`, { stdio: 'pipe' });
 }
 
 /** Ensure the container runtime is running, starting it if needed. */
