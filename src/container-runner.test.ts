@@ -18,6 +18,8 @@ vi.mock('./config.js', () => ({
   TIMEZONE: 'America/Los_Angeles',
   COMPOSIO_MCP_URL: undefined,
   COMPOSIO_API_KEY: undefined,
+  OLLAMA_ADMIN_TOOLS: undefined,
+  ONECLI_URL: undefined,
 }));
 
 // Mock logger
