@@ -7,7 +7,13 @@ import { isValidTimezone } from './timezone.js';
 // Read config values from .env (falls back to process.env).
 // Secrets (API keys, tokens) are NOT read here — they are loaded only
 // by the credential proxy (credential-proxy.ts), never exposed to containers.
-const envConfig = readEnvFile(['ASSISTANT_NAME', 'ASSISTANT_HAS_OWN_NUMBER', 'TZ']);
+const envConfig = readEnvFile([
+  'ASSISTANT_NAME',
+  'ASSISTANT_HAS_OWN_NUMBER',
+  'TZ',
+  'COMPOSIO_MCP_URL',
+  'COMPOSIO_API_KEY',
+]);
 
 export const ASSISTANT_NAME =
   process.env.ASSISTANT_NAME || envConfig.ASSISTANT_NAME || 'Andy';
@@ -79,6 +85,10 @@ export function getTriggerPattern(trigger?: string): RegExp {
 }
 
 export const TRIGGER_PATTERN = buildTriggerPattern(DEFAULT_TRIGGER);
+
+// Composio MCP integration (non-secret config forwarded to containers)
+export const COMPOSIO_MCP_URL = envConfig.COMPOSIO_MCP_URL;
+export const COMPOSIO_API_KEY = envConfig.COMPOSIO_API_KEY;
 
 // Timezone for scheduled tasks, message formatting, etc.
 // Validates each candidate is a real IANA identifier before accepting.

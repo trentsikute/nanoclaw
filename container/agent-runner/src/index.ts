@@ -409,7 +409,8 @@ async function runQuery(
         'TeamCreate', 'TeamDelete', 'SendMessage',
         'TodoWrite', 'ToolSearch', 'Skill',
         'NotebookEdit',
-        'mcp__nanoclaw__*'
+        'mcp__nanoclaw__*',
+        ...(process.env.COMPOSIO_MCP_URL ? ['mcp__composio__*'] : []),
       ],
       env: sdkEnv,
       permissionMode: 'bypassPermissions',
@@ -425,6 +426,19 @@ async function runQuery(
             NANOCLAW_IS_MAIN: containerInput.isMain ? '1' : '0',
           },
         },
+        ...(process.env.COMPOSIO_MCP_URL ? {
+          composio: {
+            command: 'npx',
+            args: [
+              '-y',
+              'mcp-remote',
+              process.env.COMPOSIO_MCP_URL,
+              ...(process.env.COMPOSIO_API_KEY
+                ? ['--header', `x-consumer-api-key:${process.env.COMPOSIO_API_KEY}`]
+                : []),
+            ],
+          },
+        } : {}),
       },
       hooks: {
         PreCompact: [{ hooks: [createPreCompactHook(containerInput.assistantName)] }],

@@ -74,10 +74,10 @@ export class WhatsAppChannel implements Channel {
       version,
       auth: {
         creds: state.creds,
-        keys: makeCacheableSignalKeyStore(state.keys, logger),
+        keys: makeCacheableSignalKeyStore(state.keys, logger as any),
       },
       printQRInTerminal: false,
-      logger,
+      logger: logger as any,  // logger satisfies ILogger at runtime but not statically
       browser: Browsers.macOS('Chrome'),
     });
 
@@ -355,7 +355,9 @@ export class WhatsAppChannel implements Channel {
 
     // Query Baileys' signal repository for the mapping
     try {
-      const pn = await (this.sock.signalRepository as any)?.lidMapping?.getPNForLID(jid);
+      const pn = await (
+        this.sock.signalRepository as any
+      )?.lidMapping?.getPNForLID(jid);
       if (pn) {
         const phoneJid = `${pn.split('@')[0].split(':')[0]}@s.whatsapp.net`;
         this.lidToPhoneMap[lidUser] = phoneJid;
