@@ -16,6 +16,8 @@ vi.mock('./config.js', () => ({
   GROUPS_DIR: '/tmp/nanoclaw-test-groups',
   IDLE_TIMEOUT: 1800000, // 30min
   TIMEZONE: 'America/Los_Angeles',
+  COMPOSIO_MCP_URL: undefined,
+  COMPOSIO_API_KEY: undefined,
 }));
 
 // Mock logger
