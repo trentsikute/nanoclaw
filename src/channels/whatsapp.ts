@@ -77,7 +77,7 @@ export class WhatsAppChannel implements Channel {
         keys: makeCacheableSignalKeyStore(state.keys, logger as any),
       },
       printQRInTerminal: false,
-      logger: logger as any,  // logger satisfies ILogger at runtime but not statically
+      logger: logger as any, // logger satisfies ILogger at runtime but not statically
       browser: Browsers.macOS('Chrome'),
     });
 
